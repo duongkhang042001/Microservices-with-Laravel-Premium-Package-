@@ -1,0 +1,178 @@
+version: '3.8'
+services: 
+  load-balancer:
+    image: nginx:1.19-alpine
+    restart: always
+    depends_on:
+      - gateway
+
+  gateway:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-gateway:dev
+    scale: 8
+    depends_on: 
+      - companies-api
+      - charts-api
+      - market-data-api
+      - auth
+      - metrics-api
+      - company-query-api
+
+  companies:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-companies:dev
+    entrypoint: sh -c "php /usr/local/src/companies/artisan migrate --force && php-fpm"
+    depends_on: 
+      - mysql
+      - redis
+
+  companies-api:
+    image: nginx:1.19-alpine
+    depends_on:
+      - companies
+
+  companies-worker:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-companies:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/companies/artisan redis:consume"
+    restart: always    
+    depends_on: 
+      - mysql
+      - redis
+
+  charts:
+    image: registry.gitlab.com/stock-pickr/stock-pickr-charts:dev
+    entrypoint: sh -c "php /usr/local/src/charts/artisan migrate --force && php-fpm"
+    depends_on: 
+      - mysql
+      - redis
+
+  charts-api:
+    image: nginx:1.19-alpine
+    depends_on:
+      - charts
+
+  charts-worker:  
+    image: registry.gitlab.com/stock-pickr/stock-pickr-charts:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/charts/artisan redis:consume"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis    
+
+  market-data:  
+    image: registry.gitlab.com/stock-pickr/stock-pickr-market-data:dev
+    entrypoint: sh -c "php /usr/local/src/market-data/artisan migrate --force && php-fpm"
+    depends_on: 
+      - mysql
+      - redis
+
+  market-data-api:
+    image: nginx:1.19-alpine
+    depends_on:
+      - market-data
+
+  market-data-worker:  
+    image: registry.gitlab.com/stock-pickr/stock-pickr-market-data:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/market-data/artisan redis:consume"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis
+
+  scheduler:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-scheduler:dev
+    entrypoint: sh -c "sleep 60 && php /usr/local/src/scheduler/artisan migrate --force && php /usr/local/src/scheduler/artisan schedule:run --verbose --no-interaction"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis
+
+  scheduler-worker: 
+    image: registry.gitlab.com/stock-pickr/stock-pickr-scheduler:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/scheduler/artisan redis:consume"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis
+
+  company-provider:   
+    image: registry.gitlab.com/stock-pickr/stock-pickr-company-provider:dev
+    depends_on: 
+      - redis
+
+  company-provider-api:
+    image: nginx:1.19-alpine
+    depends_on:
+      - company-provider
+
+  auth:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-auth:dev
+    depends_on: 
+      - mysql
+      - redis
+    
+  metrics:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-metrics:dev
+    entrypoint: sh -c "php /usr/local/src/metrics/artisan migrate --force && php-fpm"
+    depends_on: 
+      - mysql
+      - redis
+
+  metrics-api:
+    image: nginx:1.19-alpine
+    restart: always
+    depends_on:
+      - metrics
+
+  metrics-worker:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-metrics:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/metrics/artisan redis:consume"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis
+
+  company-query:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-company-query:dev
+    entrypoint: sh -c "php /usr/local/src/company-query/artisan migrate --force && php-fpm"  
+    depends_on: 
+      - mysql
+      - redis
+
+  company-query-api:
+    image: nginx:1.19-alpine
+    depends_on:
+      - company-query
+
+  company-query-worker:  
+    image: registry.gitlab.com/stock-pickr/stock-pickr-company-query:dev
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/company-query/artisan redis:consume"
+    restart: always
+    depends_on: 
+      - mysql
+      - redis
+
+  fe:    
+    image: registry.gitlab.com/stock-pickr/stock-pickr-fe:dev
+    depends_on: 
+      - gateway  
+
+  mysql:
+    image: mysql:8
+    volumes: 
+      - ./bin/mysql:/docker-entrypoint-initdb.d
+      - ./config/mysql:/etc/mysql/conf.d
+
+  redis:
+    image: redis:6.0
+
+  mysql-testing:
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./bin/mysql:/docker-entrypoint-initdb.d    
+
+  phpmyadmin:
+    image: phpmyadmin
+    depends_on:
+      - mysql

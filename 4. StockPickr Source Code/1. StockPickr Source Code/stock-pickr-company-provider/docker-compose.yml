@@ -1,0 +1,18 @@
+version: '3.0'
+services:
+  market-data-provider:
+    image: registry.gitlab.com/stock-pickr/stock-pickr-market-data:dev
+    volumes:
+      - ./:/usr/local/src
+
+  nginx:
+    image: nginx:1.19-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - 8002:80
+    volumes:
+      - ./:/usr/local/src
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - market-data-provider

@@ -1,0 +1,10 @@
+parameters:
+    paths:
+        - app
+    level: 5
+    excludePaths:
+        - 'app/Console/Kernel.php'
+        - 'app/Http/Kernel.php'
+        - 'app/Exceptions/Handler.php'
+        - 'app/Http/Middleware'
+        - 'app/Providers'

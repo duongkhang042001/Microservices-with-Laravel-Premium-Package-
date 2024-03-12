@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+    ports:
+      - 25060:3306
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./bin/mysql:/docker-entrypoint-initdb.d
+      - ./config/mysql:/etc/mysql/conf.d
+
+  redis:
+    image: redis:6.0
+    restart: always
+    ports:
+      - 25061:6379
+    volumes:
+      - redisdata:/data
+
+  backup:
+    image: $BACKUP_IMAGE
+    restart: always
+    environment: 
+      - NODE_ENV=prod
+      - BACKUP_HOUR=8
+      - BACKUP_MINUTE=0
+      - CLEANUP_HOUR=9
+      - CLEANUP_MINUTE=0
+      - CLEANUP_AGE_IN_DAYS=30
+      - MYSQL_DATA_PATH=/var/lib/mysql
+      - REDIS_DATA_PATH=/var/lib/redis
+      - S3_ACCESS_KEY=$SP_S3_ACCESS_KEY
+      - S3_SECRET=$SP_S3_SECRET
+      - S3_ENDPOINT=$SP_S3_ENDPOINT
+      - S3_BUCKET=$SP_S3_BUCKET
+    volumes:
+      - type: volume
+        read_only: true
+        source: mysqldata
+        target: /var/lib/mysql
+      - type: volume
+        read_only: true
+        source: redisdata
+        target: /var/lib/redis
+
+volumes: 
+  mysqldata:
+    external: true
+  redisdata:
+    external: true

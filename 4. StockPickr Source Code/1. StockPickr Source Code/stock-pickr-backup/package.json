@@ -1,0 +1,23 @@
+{
+    "name": "backup",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node app.js",
+        "dev": "./node_modules/nodemon/bin/nodemon.js app.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "nodemon": "^2.0.7"
+    },
+    "dependencies": {
+        "aws-sdk": "^2.967.0",
+        "axios": "^0.21.1",
+        "node-schedule": "^2.0.0",
+        "tar": "^6.1.8"
+    }
+}

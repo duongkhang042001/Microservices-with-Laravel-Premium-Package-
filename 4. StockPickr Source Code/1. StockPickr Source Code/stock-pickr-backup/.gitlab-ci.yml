@@ -1,0 +1,51 @@
+stages:
+    - build
+    - publish
+    - deploy
+
+variables:
+    JOB_IMAGE_NAME_PROD: $CI_REGISTRY_IMAGE/prod:$CI_COMMIT_SHORT_SHA
+    JOB_IMAGE_NAME_DEV: $CI_REGISTRY_IMAGE:dev
+
+build-prod:
+    stage: build
+    script:
+        - docker build --target=prod -t $JOB_IMAGE_NAME_PROD -f ./docker/Dockerfile .
+    tags:
+        - do-runner
+
+build-dev:
+    stage: build
+    script:
+        - docker build --target=dev -t $JOB_IMAGE_NAME_DEV -f ./docker/Dockerfile .
+    tags:
+        - do-runner
+
+push-prod:
+    stage: publish
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker push $JOB_IMAGE_NAME_PROD
+    tags:
+        - do-runner
+
+push-dev:
+    stage: publish
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker push $JOB_IMAGE_NAME_DEV
+    tags:
+        - do-runner
+
+deploy-prod:
+    stage: deploy
+    script:
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Fcommon%2Fservers.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > servers.py
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Fcommon%2Ffunctions.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > functions.py
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Frestart-service%2Frestart-service-on-db-server.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > restart-service-on-db-server.py
+        - python3 restart-service-on-db-server.py backup $JOB_IMAGE_NAME_PROD
+        - rm servers.py functions.py restart-service-on-db-server.py
+    tags:
+        - do-runner
+    when: manual
+    allow_failure: true

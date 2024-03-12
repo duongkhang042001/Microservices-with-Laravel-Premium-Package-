@@ -1,0 +1,49 @@
+stages:
+  - build
+  - analyze
+  - test
+  - publish
+
+variables:
+  JOB_IMAGE_NAME_DEV: $CI_REGISTRY_IMAGE:dev
+
+build:
+  stage: build
+  script:
+    - docker build -t $JOB_IMAGE_NAME_DEV  -f ./docker/Dockerfile .
+
+phpstan:
+  stage: analyze
+  script:
+    - docker run --rm -t $JOB_IMAGE_NAME_DEV ./vendor/bin/phpstan analyze --memory-limit=1G
+
+phpinsights:
+  stage: analyze
+  script:
+    - docker run --rm -t $JOB_IMAGE_NAME_DEV php artisan insights --no-interaction --min-quality=90 --min-complexity=90 --min-architecture=9 --min-style=90
+
+deptrac:
+  stage: analyze
+  script:
+    - docker run --rm -t $JOB_IMAGE_NAME_DEV ./vendor/bin/deptrac
+
+test:
+  stage: test
+  before_script:
+    - docker-compose -f docker-compose.ci.yml up -d --force-recreate
+    - docker-compose -f docker-compose.ci.yml exec -T products chown -R www-data:www-data /usr/local/src
+  script:
+    - docker-compose -f docker-compose.ci.yml exec -T products php artisan test
+  after_script:
+    - docker cp products_products_1:/usr/local/src/products/tests/coverage tests/coverage
+    - docker-compose -f docker-compose.ci.yml down
+  artifacts:
+    when: always
+    paths:
+      - tests/coverage
+
+push:
+  stage: publish
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $JOB_IMAGE_NAME_DEV

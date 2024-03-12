@@ -1,0 +1,13 @@
+version: '3.0'
+services:
+  company-provider:
+    image: $JOB_IMAGE_NAME_DEV
+    environment:
+      - APP_ENV=local
+      - APP_KEY=base64:EOs/nvVTIjulSqmfZnLFb5hTlStPmfHHtGqQCtg4bB4=
+      - APP_DEBUG=true
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
+      - FINNHUB_API_URL=http://finnhub-api.com/
+      - FINNHUB_API_TOKEN=api_token
+      - USE_PRIORITY_TICKERS=false

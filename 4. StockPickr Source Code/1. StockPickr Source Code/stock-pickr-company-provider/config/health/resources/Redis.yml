@@ -1,0 +1,13 @@
+name: Redis
+abbreviation: rds
+checker: App\Checkers\RedisChecker
+column_size: 3
+notify: true
+error_message: "Got a wrong value back from Redis."
+targets:
+  - publisher:
+      key: "health:redis:publisher-key"
+      connection: "publisher"
+  - subscriber:
+      key: "health:redis:subscriber-key"
+      connection: "subscriber"

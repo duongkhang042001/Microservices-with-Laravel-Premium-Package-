@@ -1,0 +1,8 @@
+name: Php
+abbreviation: php
+checker: App\Checkers\PhpChecker
+column_size: 3
+notify: true
+targets:
+  - default:
+      command: "php-fpm -t"

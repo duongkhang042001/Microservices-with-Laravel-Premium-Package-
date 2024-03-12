@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  fe:
+    image: registry.gitlab.com/stock-pickr/stock-pickr-fe:dev
+    ports:
+      - 8080:8080
+    volumes:
+      - ./:/usr/local/src
+    environment:
+      VUE_APP_API_BASE_URL: http://192.168.0.245:8000/api

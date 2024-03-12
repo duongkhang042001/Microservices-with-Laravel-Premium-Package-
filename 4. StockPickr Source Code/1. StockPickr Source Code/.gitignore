@@ -1,0 +1,11 @@
+bin/fix-permissions.sh
+bin/reset-db.sh
+bin/update-packages.sh
+bin/start.sh
+bin/install-new-server.sh
+bin/test.sh
+jmeter.log
+redisdata
+mysqldata
+__pycache__
+*.env

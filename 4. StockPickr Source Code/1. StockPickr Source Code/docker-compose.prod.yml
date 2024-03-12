@@ -1,0 +1,380 @@
+version: '3.8'
+services: 
+  load-balancer:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes:
+      - ./config/load-balancer.nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 3000:3000
+    depends_on:
+      - gateway
+
+  gateway:
+    image: $GATEWAY_IMAGE
+    restart: always
+    scale: $NUMBER_OF_PROC
+    ports:
+      - "3100"
+    environment: 
+      - PORT=3100
+      - AUTH_SERVICE_HOST=http://auth:3000/
+      - COMPANIES_SERVICE_HOST=http://companies-api/
+      - MARKET_DATA_SERVICE_HOST=http://market-data-api/
+      - CHARTS_SERVICE_HOST=http://charts-api/
+      - METRICS_SERVICE_HOST=http://metrics-api/
+      - QUERIES_SERVICE_HOST=http://company-query-api/
+      - COMPANY_PROVIDER_SERVICE_HOST=http://company-provider-api/
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_DATABASE=1
+      - REDIS_SCHEME=tcp
+    depends_on: 
+      - companies-api
+      - charts-api
+      - market-data-api
+      - auth
+      - metrics-api
+      - company-query-api
+
+  companies:
+    image: $COMPANIES_IMAGE
+    entrypoint: sh -c "php /usr/local/src/companies/artisan migrate --force && php-fpm"
+    restart: always
+    volumes: 
+      - type: volume
+        source: companies-data
+        target: /usr/local/src/companies
+      - type: volume
+        source: companies-nginx
+        target: /usr/local/src/companies/docker/nginx/conf.d
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:7t3iJGYKu1jqjeEQixGEL8mXwCr6XgVRmd6ryRII3Jo=
+      - APP_DEBUG=false
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=companies
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  companies-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: companies-data
+        target: /usr/local/src/companies
+      - type: volume
+        read_only: true
+        source: companies-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8000:80
+    depends_on:
+      - companies
+
+  charts:
+    image: $CHARTS_IMAGE
+    entrypoint: sh -c "php /usr/local/src/charts/artisan migrate --force && php-fpm"
+    restart: always
+    volumes: 
+      - type: volume
+        source: charts-data
+        target: /usr/local/src/charts
+      - type: volume
+        source: charts-nginx
+        target: /usr/local/src/charts/docker/nginx/conf.d
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=charts
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  charts-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: charts-data
+        target: /usr/local/src/charts
+      - type: volume
+        read_only: true
+        source: charts-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8004:80
+    depends_on:
+      - charts
+
+  market-data:
+    image: $MARKET_DATA_IMAGE
+    entrypoint: sh -c "php /usr/local/src/market-data/artisan migrate --force && php-fpm"
+    restart: always
+    volumes: 
+      - type: volume
+        source: market-data-data
+        target: /usr/local/src/market-data
+      - type: volume
+        source: market-data-nginx
+        target: /usr/local/src/market-data/docker/nginx/conf.d
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=market-data
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  market-data-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: market-data-data
+        target: /usr/local/src/market-data
+      - type: volume
+        read_only: true
+        source: market-data-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8005:80
+    depends_on:
+      - market-data
+
+  company-provider:
+    image: $COMPANY_PROVIDER_IMAGE
+    restart: always
+    volumes: 
+      - type: volume
+        source: company-provider-data
+        target: /usr/local/src/company-provider
+      - type: volume
+        source: company-provider-nginx
+        target: /usr/local/src/company-provider/docker/nginx/conf.d
+    environment: 
+      - FINNHUB_API_URL=$SP_FINNHUB_API_URL
+      - FINNHUB_API_TOKEN=$SP_FINNHUB_API_TOKEN
+      - USE_PRIORITY_TICKERS=false
+      - APP_ENV=production
+      - APP_KEY=base64:EOs/nvVTIjulSqmfZnLFb5hTlStPmfHHtGqQCtg4bB4=
+      - APP_DEBUG=false      
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  company-provider-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: company-provider-data
+        target: /usr/local/src/company-provider
+      - type: volume
+        read_only: true
+        source: company-provider-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8002:80
+    depends_on:
+      - company-provider
+
+  auth:
+    image: $AUTH_IMAGE
+    restart: always
+    environment: 
+      - PORT=3000
+      - TOKEN_KEY=aeACze2XCnk5MrQMXhxBYLJMYY8Ejmev
+      - NODE_ENV=prod
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=auth
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+    ports:
+      - 8006:3000
+    
+  metrics:
+    entrypoint: sh -c "php /usr/local/src/metrics/artisan migrate --force && php-fpm"
+    restart: always
+    image: $METRICS_IMAGE
+    volumes: 
+      - type: volume
+        source: metrics-data
+        target: /usr/local/src/metrics
+      - type: volume
+        source: metrics-nginx
+        target: /usr/local/src/metrics/docker/nginx/conf.d
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=metrics
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  metrics-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: metrics-data
+        target: /usr/local/src/metrics
+      - type: volume
+        read_only: true
+        source: metrics-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8007:80
+    depends_on:
+      - metrics
+
+  company-query:
+    image: $COMPANY_QUERY_IMAGE
+    entrypoint: sh -c "php /usr/local/src/company-query/artisan migrate --force && php-fpm"  
+    restart: always
+    volumes: 
+      - type: volume
+        source: company-query-data
+        target: /usr/local/src/company-query
+      - type: volume
+        source: company-query-nginx
+        target: /usr/local/src/company-query/docker/nginx/conf.d
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=company-query
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  company-query-api:
+    image: nginx:1.19-alpine
+    restart: always
+    volumes: 
+      - type: volume
+        read_only: true
+        source: company-query-data
+        target: /usr/local/src/company-query
+      - type: volume
+        read_only: true
+        source: company-query-nginx
+        target: /etc/nginx/conf.d
+    ports:
+      - 8008:80
+    depends_on:
+      - company-query
+
+  fe:
+    image: $FE_IMAGE
+    restart: always
+    ports:
+      - 80:80
+    depends_on: 
+      - gateway  
+
+   fluentd:
+     image: registry.gitlab.com/stock-pickr/stock-pickr/fluentd:prod
+     user: root
+     volumes:
+       - /var/lib/docker/containers:/fluentd/log/containers
+     depends_on: 
+       - elasticsearch
+
+   elasticsearch:
+     image: elasticsearch:7.14.1
+     environment:
+       - node.name=elasticsearch
+       - cluster.initial_master_nodes=elasticsearch
+       - bootstrap.memory_lock=true
+       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+     ports:
+       - 9200:9200
+     ulimits:
+       memlock:
+         soft: -1
+         hard: -1
+
+   kibana:
+     image: kibana:7.14.1
+     ports:
+       - 5601:5601
+     environment:
+       ELASTICSEARCH_URL: http://elasticsearch:9200
+       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on: 
+       - elasticsearch
+
+volumes: 
+  companies-data:
+  companies-nginx:
+  charts-data:
+  charts-nginx:
+  company-provider-data:
+  company-provider-nginx:
+  company-query-data:
+  company-query-nginx:
+  market-data-data:
+  market-data-nginx:
+  metrics-data:
+  metrics-nginx:

@@ -1,0 +1,6 @@
+name: ChartData
+abbreviation: rds
+checker: App\Checkers\ChartDataChecker
+column_size: 3
+notify: true
+error_message: "Missing charts"

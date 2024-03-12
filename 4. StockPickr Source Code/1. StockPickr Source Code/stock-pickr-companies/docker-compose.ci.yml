@@ -1,0 +1,42 @@
+version: '2.4'
+services:
+  companies:
+    image: $JOB_IMAGE_NAME_DEV
+    environment:
+      - APP_ENV=local
+      - APP_KEY=base64:7t3iJGYKu1jqjeEQixGEL8mXwCr6XgVRmd6ryRII3Jo=
+      - APP_DEBUG=true
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-testing
+      - DB_PORT=3306
+      - DB_DATABASE=test
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - LOG_CHANNEL=single
+      - CACHE_DRIVER=redis
+    depends_on:
+      mysql-testing:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  mysql-testing:
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=test
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6.0
+    restart: unless-stopped

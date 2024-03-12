@@ -1,0 +1,5 @@
+Dockerfile
+docker-compose.yml
+vendor
+tests/coverage
+.phpunit.result.cache

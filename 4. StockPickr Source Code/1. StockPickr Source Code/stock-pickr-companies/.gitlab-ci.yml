@@ -1,0 +1,91 @@
+stages:
+    - build
+    - analyze
+    - test
+    - publish
+    - deploy
+
+variables:
+    JOB_IMAGE_NAME_DEV: $CI_REGISTRY_IMAGE:dev
+    JOB_IMAGE_NAME_PROD: $CI_REGISTRY_IMAGE/prod:$CI_COMMIT_SHORT_SHA
+
+build-dev:
+    stage: build
+    script:
+        - docker build --target=dev -t $JOB_IMAGE_NAME_DEV  -f ./docker/Dockerfile .
+    tags:
+        - do-runner
+
+build-prod:
+    stage: build
+    script:
+        - docker build --target=prod -t $JOB_IMAGE_NAME_PROD -f ./docker/Dockerfile .
+    tags:
+        - do-runner
+
+phpstan:
+    stage: analyze
+    script:
+        - docker run --rm -t $JOB_IMAGE_NAME_DEV ./vendor/bin/phpstan analyze --memory-limit=1G
+    tags:
+        - do-runner
+
+phpinsights:
+    stage: analyze
+    script:
+        - docker run --rm -t $JOB_IMAGE_NAME_DEV php artisan insights --no-interaction --min-quality=85 --min-complexity=88 --min-architecture=88 --min-style=86
+    tags:
+        - do-runner
+
+deptrac:
+    stage: analyze
+    script:
+        - docker run --rm -t $JOB_IMAGE_NAME_DEV ./vendor/bin/deptrac
+    tags:
+        - do-runner
+
+test:
+    stage: test
+    before_script:
+        - docker-compose -f docker-compose.ci.yml up -d --force-recreate
+        - docker-compose -f docker-compose.ci.yml exec -T companies chown -R www-data:www-data /usr/local/src
+    script:
+        - docker-compose -f docker-compose.ci.yml exec -T companies php artisan test
+    after_script:
+        - docker cp stock-pickr-api_companies_1:/usr/local/src/companies/tests/coverage tests/coverage
+        - docker-compose -f docker-compose.ci.yml down
+    tags:
+        - do-runner
+    artifacts:
+        when: always
+        paths:
+            - tests/coverage
+
+push-dev:
+    stage: publish
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker push $JOB_IMAGE_NAME_DEV
+    tags:
+        - do-runner
+
+push-prod:
+    stage: publish
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker push $JOB_IMAGE_NAME_PROD
+    tags:
+        - do-runner
+
+deploy-prod:
+    stage: deploy
+    script:
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Fcommon%2Fservers.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > servers.py
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Fcommon%2Ffunctions.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > functions.py
+        - curl "https://gitlab.com/api/v4/projects/24430614/repository/files/bin%2Frestart-service%2Frestart-service-on-all-server.py/raw?ref=master&private_token=$SP_GITLAB_ACCESS_TOKEN" > restart-service-on-all-server.py
+        - python3 restart-service-on-all-server.py companies $JOB_IMAGE_NAME_PROD
+        - rm servers.py functions.py restart-service-on-all-server.py
+    tags:
+        - do-runner
+    when: manual
+    allow_failure: true

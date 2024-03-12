@@ -1,0 +1,6 @@
+name: AbandonedCompanies
+abbreviation: abc
+checker: App\Checkers\AbandonedCompaniesChecker
+column_size: 3
+notify: true
+error_message: "There are abandoned companies without updates"

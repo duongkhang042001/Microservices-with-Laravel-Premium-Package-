@@ -1,0 +1,10 @@
+name: Queue
+abbreviation: queue
+checker: PragmaRX\Health\Checkers\Queue
+error_message: "Queue system is not working properly."
+column_size: 3
+targets:
+  - subscriber:
+      test_job: PragmaRX\Health\Support\Jobs\TestJob
+      notify: true
+      connection: "subscriber"

@@ -1,0 +1,28 @@
+FROM php:8.0.1-fpm
+
+WORKDIR /usr/local/src/common
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libfreetype6-dev \
+    libzip-dev \
+    git \
+    unzip \
+    zip
+
+RUN chown -R www-data:www-data /usr/local/src/common
+
+RUN docker-php-ext-install sockets bcmath zip pcntl posix
+RUN pecl install redis
+RUN pecl install xdebug
+RUN docker-php-ext-enable xdebug
+
+COPY ./dev.ini /usr/local/etc/php/conf.d/dev.ini
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY composer.* ./
+RUN composer install
+
+COPY . .
+
+USER root

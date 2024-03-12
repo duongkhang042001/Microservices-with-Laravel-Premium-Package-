@@ -1,0 +1,38 @@
+{
+  "name": "stock-pickr/common",
+  "description": "Common library for StockPickr",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+     {
+         "name": "Martin Joo",
+         "email": "m4rt1n.j00@gmail.com"
+     }
+  ],
+  "scripts": {
+    "test": "./vendor/bin/phpunit",
+    "phpstan": "./vendor/bin/phpstan analyze --memory-limit=1G",
+    "phpinsights": "./vendor/bin/phpinsights --no-interaction --min-quality=80 --min-complexity=80 --min-architecture=80 --min-style=80"
+  },
+  "require": {
+    "php": "^8.0",
+    "phpunit/phpunit": "^9.5",
+    "mockery/mockery": "^1.4",
+    "illuminate/support": "^8.0.0"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^0.12.86",
+    "nunomaduro/phpinsights": "dev-master"
+  },
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+        "StockPickr\\Common\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+        "Tests\\": "tests/"
+    }
+  }
+}

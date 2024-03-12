@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <coverage
+       processUncoveredFiles="true"
+       includeUncoveredFiles="true"
+       cacheDirectory="/dev/shm"
+       pathCoverage="false"
+    >
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+        <report>
+            <html outputDirectory="./tests/coverage" />
+        </report>
+        <exclude>
+            <directory suffix=".php">./app/Http/Middleware</directory>
+            <directory suffix=".php">./app/Console</directory>
+            <directory suffix=".php">./app/Checkers</directory>
+            <file>./app/Providers/BroadcastServiceProvider.php</file>
+            <file>./app/Providers/AppServiceProvider.php</file>
+            <file>./app/Services/RedisService.php</file>
+        </exclude>
+    </coverage>
+    <php>
+        <server name="APP_ENV" value="testing"/>
+        <server name="DB_HOST" value="mysql-testing"/>
+        <server name="DB_PASSWORD" value="root"/>
+        <server name="BCRYPT_ROUNDS" value="4"/>
+        <server name="CACHE_DRIVER" value="array"/>
+        <server name="MAIL_DRIVER" value="array"/>
+        <server name="QUEUE_CONNECTION" value="sync"/>
+        <server name="SESSION_DRIVER" value="array"/>
+        <server name="TELESCOPE_ENABLED" value="false"/>
+
+        <ini name="display_errors" value="true"/>
+        <ini name="memory_limit" value="512M" />
+    </php>
+</phpunit>

@@ -1,0 +1,68 @@
+stages:
+    - build
+    - publish
+    - release-prod
+    - deploy-prod
+
+variables:
+    JOB_IMAGE_NAME: $CI_REGISTRY_IMAGE/fluentd:prod
+
+build-fluentd:
+    stage: build
+    script:
+        - docker build -t $JOB_IMAGE_NAME -f ./fluentd/Dockerfile ./fluentd
+    tags:
+        - do-runner
+
+push-fluentd:
+    stage: publish
+    script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker push $JOB_IMAGE_NAME
+    tags:
+        - do-runner
+
+release-all:
+    stage: release-prod
+    script: python3 ./bin/release/release-on-all-server.py
+    tags:
+        - do-runner
+
+release-db:
+    stage: release-prod
+    script:
+        - >
+            ssh -tt -o StrictHostKeyChecking=no 
+            -i $SP_RUNNER_SSH_KEY_PATH $SP_SSH_CONNECTION_PROD_DB 
+            "cd $SP_DEPLOY_PATH && git pull"
+    tags:
+        - do-runner
+
+deploy-all:
+    stage: deploy-prod
+    script: python3 ./bin/restart-compose/restart-compose-on-all-server.py
+    tags:
+        - do-runner
+    when: manual
+    allow_failure: true
+
+deploy-one-server:
+    stage: deploy-prod
+    script: python3 ./bin/restart-compose/restart-compose-on-all-server.py production3
+    tags:
+        - do-runner
+    when: manual
+    allow_failure: true
+
+deploy-db:
+    stage: deploy-prod
+    script:
+        - >
+            ssh -tt -o StrictHostKeyChecking=no 
+            -i $SP_RUNNER_SSH_KEY_PATH $SP_SSH_CONNECTION_PROD_DB 
+            "cd $SP_DEPLOY_PATH 
+            && python3 ./bin/restart-compose/restart-compose.py prod.db $CI_REGISTRY $CI_REGISTRY_USER $CI_REGISTRY_PASSWORD"
+    tags:
+        - do-runner
+    when: manual
+    allow_failure: true

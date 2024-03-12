@@ -1,0 +1,6 @@
+name: Stucked Schedules
+abbreviation: ss
+checker: App\Checkers\StuckedScheduleChecker
+column_size: 3
+notify: true
+error_message: "There are stucked schedules"

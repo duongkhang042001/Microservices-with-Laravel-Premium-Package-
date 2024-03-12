@@ -1,0 +1,49 @@
+paths:
+  - ./app
+exclude_files:
+  - '#.*test.*#'
+layers:
+  - name: Controller
+    collectors:
+      - type: className
+        regex: .*App\\Http\\Controllers\\.*
+  - name: Listener
+    collectors:
+      - type: className
+        regex: .*App\\Listeners\\.*
+  - name: Event
+    collectors:
+      - type: className
+        regex: .*App\\Events\\.*
+  - name: Service
+    collectors:
+      - type: className
+        regex: .*App\\Services\\.*
+  - name: Repository
+    collectors:
+      - type: className
+        regex: .*App\\Repositories\\.*
+  - name: Model
+    collectors:
+      - type: className
+        regex: .*App\\Models\\.*
+ruleset:
+  Controller:
+    - Service
+    - Repository
+    - Event
+    - Model
+  Listener:
+    - Service
+    - Repository
+    - Event
+    - Model
+  Event:
+    - Model
+  Service:
+    - Repository
+    - Event
+    - Model
+  Repository:
+    - Model
+  Model:

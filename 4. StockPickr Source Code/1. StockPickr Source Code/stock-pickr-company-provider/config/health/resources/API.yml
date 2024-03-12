@@ -1,0 +1,17 @@
+name: API check
+abbreviation: apichecker
+checker: PragmaRX\Health\Checkers\Http
+notify: true
+column_size: 3
+timeout_message: "[TIMEOUT] A request to %s took %s seconds. Timeout is set to %s seconds."
+connection_timeout: 5
+roundtrip_timeout: 10
+targets:
+  - i-am-alive:
+      urls:
+        - http://market-data-provider-api/api/v1/company-provider/i-am-alive:
+            method: GET
+  - finnhub:
+      urls:
+        - https://finnhub.io/api/v1/company-provider/stock/profile?symbol=AAPL&token=bpufdk7rh5rbbhoiik70:
+            method: GET

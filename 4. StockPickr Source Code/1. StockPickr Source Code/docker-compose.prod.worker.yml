@@ -1,0 +1,169 @@
+version: '3.8'
+services:
+  scheduler:
+    image: $SCHEDULER_IMAGE
+    entrypoint: sh -c "sleep 60 && php /usr/local/src/scheduler/artisan migrate --force && php /usr/local/src/scheduler/artisan schedule:run --verbose --no-interaction"
+    restart: always
+    environment: 
+      - COMPANY_PROVIDER_SERVICE_URL=$SP_COMPANY_PROVIDER_API_URL
+      - SCHEDULER_LOG_OUTPUT=/proc/1/fd/1
+      - APP_ENV=production
+      - APP_KEY=base64:bqNRzRasABLEjxidHLmncfDtBYFxcZ4j6lNGvfQyOZI=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=scheduler
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  companies-worker:
+    image: $COMPANIES_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/companies/artisan redis:consume"
+    restart: always
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:7t3iJGYKu1jqjeEQixGEL8mXwCr6XgVRmd6ryRII3Jo=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=companies
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  charts-worker:
+    image: $CHARTS_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/charts/artisan redis:consume"
+    restart: always
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=charts
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  market-data-worker:
+    image: $MARKET_DATA_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/market-data/artisan redis:consume"
+    restart: always
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=market-data
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  scheduler-worker:
+    image: $SCHEDULER_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/scheduler/artisan redis:consume"
+    restart: always
+    environment: 
+      - COMPANY_PROVIDER_SERVICE_URL=http://company-provider-api/api/v1/
+      - APP_ENV=production
+      - APP_KEY=base64:bqNRzRasABLEjxidHLmncfDtBYFxcZ4j6lNGvfQyOZI=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=scheduler
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  metrics-worker:
+    image: $METRICS_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/metrics/artisan redis:consume"
+    restart: always
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=metrics
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
+
+  company-query-worker:
+    image: $COMPANY_QUERY_IMAGE
+    entrypoint: sh -c "sleep 30 && php /usr/local/src/company-query/artisan redis:consume"
+    restart: always
+    environment: 
+      - APP_ENV=production
+      - APP_KEY=base64:eyQMQLqq4lz2hIj/pMcJ77QxYNHfd7PfQdysV+/niKc=
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=$SP_MYSQL_HOST
+      - DB_PORT=$SP_MYSQL_PORT
+      - DB_DATABASE=company-query
+      - DB_USERNAME=root
+      - DB_PASSWORD=$SP_MYSQL_ROOT_PASSWORD
+      - REDIS_HOST=$SP_REDIS_HOST
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=$SP_REDIS_PORT
+      - REDIS_CLIENT=phpredis
+      - REDIS_SCHEME=tcp
+      - REDIS_CONSUMER_MODE=only-new-events
+      - CACHE_DRIVER=redis
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=error
